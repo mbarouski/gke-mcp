@@ -3,3 +3,4 @@ gke-mcp
 .gemini/
 # Added by goreleaser init:
 dist/
+gemini-extension.json
