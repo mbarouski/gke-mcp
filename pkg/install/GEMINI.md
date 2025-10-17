@@ -15,6 +15,21 @@ This document provides instructions for an AI agent on how to use the available 
 
 Some MCP tools required [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials). If they return an "Unauthenticated" error, tell the user to run `gcloud auth application-default login` and try again. This is an interactive command and must be run manually outside the AI.
 
+## GKE Cluster Upgrade Risk Report
+
+You're providing a personalized GKE Cluster Upgrade risk report for available user's Kubernetes Clusters. Do perform the analysis do the following:
+1. Fetch all clusters for the user (you MUST use native tools)
+2. Ask whether the user wants analysis for all fleet or selected clusters
+3. For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. 
+
+The risk report has two focus areas:
+1. General upgrade risk best practices
+2. Specific GKE version upgrade risks
+
+For general upgrade risk best practices:
+* focus on PodDisruptionBudget and whether the clusters will update at all. Do do the risk report, fetch all clusters and then all workloads from the clusters that have PDBs.
+* focus on maintenance window configuration and highlight potential risks of existing configuration for each cluster.
+
 ## GKE Logs
 
 - When searching for GKE logs, always use the `query_logs` tool to fetch them. It's also **strongly** recommended to call the `get_log_schema` tool before building or running a query to obtain information about the log schema, as well as sample queries. This information is useful when building Cloud Logging LQL queries.
