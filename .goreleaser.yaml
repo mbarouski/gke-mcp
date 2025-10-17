@@ -43,7 +43,8 @@ archives:
         formats: [zip]
     files:
       - LICENSE
-      - gemini-extension.json
+      - src: gemini-extension.json.out
+        dst: gemini-extension.json
       - src: pkg/install/GEMINI.md
         strip_parent: true
 

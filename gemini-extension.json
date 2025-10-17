@@ -1,11 +1,11 @@
 {
   "contextFileName": "GEMINI.md",
-  "description": "Enable MCP-compatible AI agents to interact with Google Kubernetes Engine.",
+  "description": "Gemini CLI extension for Google Kubernetes Engine.",
   "mcpServers": {
     "gke": {
       "command": "${extensionPath}${/}gke-mcp"
     }
   },
   "name": "gke-mcp",
-  "version": "{{ .Version }}"
+  "version": "v0.3.0"
 }
