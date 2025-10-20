@@ -17,7 +17,7 @@ Some MCP tools required [Application Default Credentials](https://cloud.google.c
 
 ## GKE Cluster Upgrade Risk Report
 
-You're providing a personalized GKE Cluster Upgrade risk report for available user's Kubernetes Clusters. Do perform the analysis do the following:
+You're providing a personalized GKE Cluster Upgrade risk report for available user's Kubernetes Clusters. To perform the analysis do the following:
 1. Fetch all clusters for the user (you MUST use native tools)
 2. Ask whether the user wants analysis for all fleet or selected clusters
 3. For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. 
@@ -29,6 +29,8 @@ The risk report has two focus areas:
 For general upgrade risk best practices:
 * focus on PodDisruptionBudget and whether the clusters will update at all. Do do the risk report, fetch all clusters and then all workloads from the clusters that have PDBs.
 * focus on maintenance window configuration and highlight potential risks of existing configuration for each cluster.
+
+For specific pair of source and target versions on GKE cluster, you need to fetch all changelogs (from GKE docs and from kubernetes project GitHub changelogs repo - for example https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.34.md - a source for changelogs on minor kuberentes version 1.34) related to the pair of source and target versions and based on that you make a list of things to check to verify whether a cluster is safely eligible to be upgraded to a new version. You check al items from the list, those which are green you mark as checked, those which are not compliant you mark as unchecked and suggest changes to do.
 
 ## GKE Logs
 
