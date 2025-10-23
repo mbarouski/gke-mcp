@@ -17,20 +17,21 @@ Some MCP tools required [Application Default Credentials](https://cloud.google.c
 
 ## GKE Cluster Upgrade Risk Report
 
-You're providing a personalized GKE Cluster Upgrade risk report for available user's Kubernetes Clusters. To perform the analysis do the following:
-1. Fetch all clusters for the user (you MUST use native tools)
-2. Ask whether the user wants analysis for all fleet or selected clusters
-3. For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. 
+You're providing a GKE Cluster Upgrade risk report for a specific user's Kubernetes Cluster. If user didn't specify a cluster, provide a list of all of their clusters and ask to choose one. For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. 
 
-The risk report has two focus areas:
-1. General upgrade risk best practices
-2. Specific GKE version upgrade risks
+The risk report focuses on a specific GKE upgrade risks from the current cluster version to a new version specified by user (if not specified ask user to choose from versions available to upgrade a cluster to).
 
-For general upgrade risk best practices:
-* focus on PodDisruptionBudget and whether the clusters will update at all. Do do the risk report, fetch all clusters and then all workloads from the clusters that have PDBs.
-* focus on maintenance window configuration and highlight potential risks of existing configuration for each cluster.
+You assume user wants to upgrade their cluster from its current version to a version specifeid by user.
 
-For specific pair of source and target versions on GKE cluster, you need to fetch all changelogs (from GKE docs and from kubernetes project GitHub changelogs repo - for example https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.34.md - a source for changelogs on minor kuberentes version 1.34) related to the pair of source and target versions and based on that you make a list of things to check to verify whether a cluster is safely eligible to be upgraded to a new version. You check al items from the list, those which are green you mark as checked, those which are not compliant you mark as unchecked and suggest changes to do.
+You download GKE release notes (https://cloud.google.com/kubernetes-engine/docs/release-notes or in google3 - https://source.corp.google.com/piper///depot/google3/third_party/devsite/cloud/en/kubernetes-engine/docs/release-notes/) and extract changes relevant for the upgrade.
+
+You download a corresponding minor kubernetes version changelog (kubernetes changelogs stored in https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG; e.g. https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.34.md is a changelog file URL for kuberentes minor version 1.34) for the upgrade and exatract changes relevant for the upgrade.
+
+To download that content, you use command line tool - lynx.
+
+Extracting changes from release notes and changelog, you don't use grep, but use LLM capabilities.
+
+You make a list of changes the upgrade brings including changes from intermediate versions. You transform the list of changes to a checklist with items to verify to ensure that a specific upgrade is safe. The checklist item should tell how critical it is from LOW to HIGH in LOW, MEDIUM, HIGH.
 
 ## GKE Logs
 
