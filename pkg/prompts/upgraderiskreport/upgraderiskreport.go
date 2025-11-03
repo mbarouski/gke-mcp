@@ -26,27 +26,47 @@ import (
 )
 
 const gkeUpgradeRiskReportPromptTemplate = `
-You are a GKE expert, you have to upgrade a GKE cluster {{.clusterName}} in {{.clusterLocation}} location to {{.target_version}} version, but before that you have to understand how safe it is to perform the upgrade to the specified version, for that you generate an upgrade risk report.
+You are a GKE expert, you have to upgrade a GKE cluster {{.clusterName}} in {{.clusterLocation}} location to target version - {{.target_version}}, but before that you have to understand how safe it is to perform the upgrade to the specified version, for that you generate an upgrade risk report.
+
+If target version value - "{{.target_version}}" - is not a specific version provide a list of relevant versions the target cluster control plane can be upgraded to and let customer choose from. If "{{.target_version}}" looks like a query for a version then apply it to show only relevant versions.
 
 You're providing a GKE Cluster Upgrade risk report for a specific GKE cluster, the report focuses on a specific GKE upgrade risks which may raise upgrading from the current cluster version to the specified target version.
 
 For fetching any in-cluster resources use kubectl tool and gcloud get-credentials.
 
-The current version is a lowest version among cluster control plane version and versions on cluster node pools.
+To determine the current cluster version and current node pool versions, use gcloud. The effective "current version" for the upgrade risk report is the oldest version among the control plane and all node pools.
 
-You download GKE release notes (https://cloud.google.com/kubernetes-engine/docs/release-notes) and extract changes relevant for the upgrade. To download GKE release notes content, you use command line tool - lynx. You remember that release notes can be updated and need to be loaded again on each report generating.
+You download GKE release notes (https://cloud.google.com/kubernetes-engine/docs/release-notes) and extract changes relevant for the upgrade. Remember to use "lynx --dump [URL]" for fetching and converting HTML release notes to text.
 
-You download a corresponding minor kubernetes version changelog files (e.g. https://raw.githubusercontent.com/kubernetes/kubernetes/master/CHANGELOG/CHANGELOG-1.31.md is a changelog file URL for kuberentes minor version 1.31) for the upgrade and extract changes relevant for the upgrade. To download kubernetes changelog file, you can use curl or lynx tools. You remember that a changelog file can be updated and need to be loaded again on each report generating.
+You download a corresponding minor kubernetes version changelog files (e.g. https://raw.githubusercontent.com/kubernetes/kubernetes/master/CHANGELOG/CHANGELOG-1.31.md is a changelog file URL for kuberentes minor version 1.31) for the upgrade and extract changes relevant for the upgrade. Remember to use "curl [URL]" for raw markdown changelogs. When fetching Kubernetes changelogs, you must download and analyze the changelog for every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must process CHANGELOG-1.29.md, CHANGELOG-1.30.md, and CHANGELOG-1.31.md.
+
+When looking at GKE release notes or kubernetes changelog files, you must analyze changes for every patch version from the current version up to and including the target version. For example, if upgrading from 1.29.1-123 to 1.29.5-456, you must read CHANGELOG-1.29.md and process all changes brought by 1.29 in version range (1.29.1; 1.29.5], i.e. 1.29.2, 1.29.3, etc. Also you must process GKE release notes and process all changes included in version range (1.29.1-123; 1.29.5-456], i.e. 1.29.1-234, 1.29.2-345, 1.29.3-400 and 1.29.5-456.
+
+Always fetch the latest versions of these documents at the time the report is generated, as they can be updated.
 
 Extracting changes from release notes and changelog, you don't use grep, but use LLM capabilities.
 
-You identify changes the upgrade brings including changes from intermediate versions and put them in a list. You transform the list of changes to a checklist with items to verify to ensure that a specific upgrade is safe. The checklist item should tell how critical it is from LOW to HIGH in LOW, MEDIUM, HIGH.
+You identify changes the upgrade brings including changes from intermediate versions and put them in a list. You transform the list of changes to a checklist with items to verify to ensure that a specific upgrade is safe. The checklist item should tell how critical it is from LOW to HIGH in LOW, MEDIUM, HIGH from perspective how potentially harmful a change can be for customer workloads if such an upgrade happen instead of perspective of change importance.
+
+Your analysis of GKE release notes and Kubernetes changelogs should identify potential risks such as:
+*   Deprecated and removed APIs.
+*   Significant behavioral changes in existing features.
+*   Changes to default configurations.
+*   New features that might interact with existing workloads.
+*   Security-related changes.
 
 The checklist format follows rules:
 
 - there is only one checklist combined from all changes;
 - each checklist item is a section with 3 informational parts: Criticality, Risk description, Recommendation;
 - sections are ordered by criticality from HIGH to LOW.
+
+Assign criticality to each checklist item based on the following guidelines:
+*   **HIGH:** Issues very likely to cause service disruption, data loss, security vulnerabilities, or require immediate manual intervention during or after the upgrade. Examples: Removal of an API version currently in use, critical security patches for vulnerabilities known to be exploited, major breaking changes in core components.
+*   **MEDIUM:** Issues that could potentially cause problems, may require configuration changes, or introduce significant operational changes. Examples: Deprecation warnings for features used, changes in default settings that might alter behavior, features moving from Beta to GA with changes.
+*   **LOW:** Minor changes, bug fixes, new optional features, or informational updates that are unlikely to cause issues.
+
+Each "Recommendation" should provide clear, actionable steps the user can take to mitigate the risk. This includes example commands, configuration changes, links to specific Google Cloud documentation, or Kubernetes resources.
 
 An example of a checklist item:
 
