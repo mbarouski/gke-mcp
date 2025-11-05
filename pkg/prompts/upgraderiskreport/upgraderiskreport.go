@@ -26,57 +26,70 @@ import (
 )
 
 const gkeUpgradeRiskReportPromptTemplate = `
-You are a GKE expert, you have to upgrade a GKE cluster {{.clusterName}} in {{.clusterLocation}} location to target version - {{.target_version}}, but before that you have to understand how safe it is to perform the upgrade to the specified version, for that you generate an upgrade risk report.
+Cluster name: {{.clusterName}}
+Cluster location: {{.clusterLocation}}
+Target version: {{.targetVersion}}
 
-If target version value - "{{.target_version}}" - is not a specific version provide a list of relevant versions the target cluster control plane can be upgraded to and let customer choose from. If "{{.target_version}}" looks like a query for a version then apply it to show only relevant versions.
+You are a GKE expert, and you have to generate an upgrade risk report for the cluster before it gets upgraded to the target version from the current version. The current version is the cluster control plane version. Warn the user if node pool versions differ from the current version.
 
-You're providing a GKE Cluster Upgrade risk report for a specific GKE cluster, the report focuses on a specific GKE upgrade risks which may raise upgrading from the current cluster version to the specified target version.
+If the target version is not provided, ask the user providing them a list of available versions relying on "gcloud container get-server-config" and considering the cluster's current version and release channel.
 
-For fetching any in-cluster resources use kubectl tool and gcloud get-credentials.
+Imagine, you have to upgrade the cluster, before that you need to estimate how safe it is to perform the upgrade to the target version. For that, you generate an upgrade risk report.
 
-To determine the current cluster version and current node pool versions, use gcloud. The effective "current version" for the upgrade risk report is the oldest version among the control plane and all node pools.
+The report focuses on a specific GKE upgrade risks which may arise when upgrading the cluster from the current version to the target version.
 
-You download GKE release notes (https://cloud.google.com/kubernetes-engine/docs/release-notes) and extract changes relevant for the upgrade. Remember to use "lynx --dump [URL]" for fetching and converting HTML release notes to text.
+For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. For fetching any cluster information use gcloud.
 
-You download a corresponding minor kubernetes version changelog files (e.g. https://raw.githubusercontent.com/kubernetes/kubernetes/master/CHANGELOG/CHANGELOG-1.31.md is a changelog file URL for kuberentes minor version 1.31) for the upgrade and extract changes relevant for the upgrade. Remember to use "curl [URL]" for raw markdown changelogs. When fetching Kubernetes changelogs, you must download and analyze the changelog for every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must process CHANGELOG-1.29.md, CHANGELOG-1.30.md, and CHANGELOG-1.31.md.
+The report is based on changes which are brought by the target version and versions between the current and the target versions. You extract relevant changes from GKE release notes and kubernetes changelog files.
 
-When looking at GKE release notes or kubernetes changelog files, you must analyze changes for every patch version from the current version up to and including the target version. For example, if upgrading from 1.29.1-123 to 1.29.5-456, you must read CHANGELOG-1.29.md and process all changes brought by 1.29 in version range (1.29.1; 1.29.5], i.e. 1.29.2, 1.29.3, etc. Also you must process GKE release notes and process all changes included in version range (1.29.1-123; 1.29.5-456], i.e. 1.29.1-234, 1.29.2-345, 1.29.3-400 and 1.29.5-456.
+You get GKE release notes from https://cloud.google.com/kubernetes-engine/docs/release-notes and use "lynx --dump [URL]" for fetching and converting HTML release notes to text.
+
+You get relevant kubernetes changelog files using "curl [URL]" against URL corresponding to a minor version of interest. For example, https://raw.githubusercontent.com/kubernetes/kubernetes/master/CHANGELOG/CHANGELOG-1.31.md is a changelog file URL for kuberentes minor version 1.31.
+
+When fetching Kubernetes changelogs, you download and analyze the changelog for every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must download and analyze CHANGELOG-1.29.md, CHANGELOG-1.30.md, and CHANGELOG-1.31.md changelog files.
+
+When analyzing GKE release notes and/or kubernetes changelog files, you must consider changes for every patch version from the current version (not including) up to and including the target version. For example, if upgrading from 1.29.1-123 to 1.29.5-456, you must read CHANGELOG-1.29.md and process all changes brought by 1.29 in the version range (1.29.1; 1.29.5], i.e. 1.29.2, 1.29.3, 1.29.4, 1.29.5. Also you must read GKE release notes and process all changes included in the version range (1.29.1-123; 1.29.5-456], i.e. 1.29.1-234, 1.29.2-345, 1.29.3-400 and 1.29.5-456.
 
 Always fetch the latest versions of these documents at the time the report is generated, as they can be updated.
 
-Extracting changes from release notes and changelog, you don't use grep, but use LLM capabilities.
+Extracting changes from release notes and changelogs, you don't use grep, but use LLM capabilities. You use full content of these documents.
 
-You identify changes the upgrade brings including changes from intermediate versions and put them in a list. You transform the list of changes to a checklist with items to verify to ensure that a specific upgrade is safe. The checklist item should tell how critical it is from LOW to HIGH in LOW, MEDIUM, HIGH from perspective how potentially harmful a change can be for customer workloads if such an upgrade happen instead of perspective of change importance.
+You take a set of relevant changes and transform it to a set of risks the upgrade may be affected. The set of risks will be used by the user to ensure that the upgrade is safe. Each risk item must tell how critical it is using terms LOW, MEDIUM, HIGH from perspective how much harmful a change can be for user's workloads if such an upgrade happen.
 
-Your analysis of GKE release notes and Kubernetes changelogs should identify potential risks such as:
-*   Deprecated and removed APIs.
-*   Significant behavioral changes in existing features.
-*   Changes to default configurations.
-*   New features that might interact with existing workloads.
-*   Security-related changes.
+Your analysis of GKE release notes and kubernetes changelogs should identify potential risks such as:
+- Deprecated and removed APIs
+- Significant behavioral changes in existing features
+- Changes to default configurations
+- New features that might interact with existing workloads
+- Security-related changes
+- Changes likely to cause service disruption, data loss, security vulnerabilities, or require immediate manual intervention during or after the upgrade
 
-The checklist format follows rules:
+The set of risks represents the requested upgrade risk report. You present it as a list following the rules:
 
-- there is only one checklist combined from all changes;
-- each checklist item is a section with 3 informational parts: Criticality, Risk description, Recommendation;
-- sections are ordered by criticality from HIGH to LOW.
+- there is only one list;
+- each list item contains Criticality, Risk description, Verification recommendations, Mitigation recommendations;
+- list items are ordered by criticality from HIGH to LOW;
+- items are printed as text one under another.
 
-Assign criticality to each checklist item based on the following guidelines:
-*   **HIGH:** Issues very likely to cause service disruption, data loss, security vulnerabilities, or require immediate manual intervention during or after the upgrade. Examples: Removal of an API version currently in use, critical security patches for vulnerabilities known to be exploited, major breaking changes in core components.
-*   **MEDIUM:** Issues that could potentially cause problems, may require configuration changes, or introduce significant operational changes. Examples: Deprecation warnings for features used, changes in default settings that might alter behavior, features moving from Beta to GA with changes.
-*   **LOW:** Minor changes, bug fixes, new optional features, or informational updates that are unlikely to cause issues.
+Verification and mitigation recommendations should provide clear, actionable steps the user can take to verify/mitigate the risk. This includes example commands, configuration changes, links to specific Google Cloud documentation, or Kubernetes resources.
 
-Each "Recommendation" should provide clear, actionable steps the user can take to mitigate the risk. This includes example commands, configuration changes, links to specific Google Cloud documentation, or Kubernetes resources.
+The markdown format of a single risk item:
 
-An example of a checklist item:
+# Short risk title
 
-` + "```" + `
-HIGH: Potential for Network File System (NFS) volume mount failures
+## Description
 
-  * Criticality: HIGH
-  * Risk description: In GKE versions 1.32.4-gke.1029000 and later, MountVolume calls for Network File System (NFS) volumes might fail with the error: mount.nfs: rpc.statd is not running but is required for remote locking. This can occur if a Pod mounting an NFS volume runs on the same node as an NFS server Pod, and the NFS server Pod starts before the client Pod attempts to mount the volume.
-  * Recommendation: Before upgrading, deploy the recommended DaemonSet (https://cloud.google.com/kubernetes-engine/docs/release-notes#october_14_2025_2) on all nodes where you mount NFS volumes to ensure that the required services start correctly.
-` + "```\n"
+Risk description...
+
+## Verification recommendations
+
+Risk verification recommendations...
+
+## Mitigation recommendations
+
+Mitigation recommendations...
+
+`
 
 var gkeUpgradeRiskReportTmpl = template.Must(template.New("gke-upgrade-risk-report").Parse(gkeUpgradeRiskReportPromptTemplate))
 
@@ -104,7 +117,7 @@ func Install(_ context.Context, s *mcp.Server, _ *config.Config) error {
 			{
 				Name:        targetVersionArgName,
 				Description: "A version user want to upgrade their cluster to.",
-				Required:    true,
+				Required:    false,
 			},
 		},
 	}, gkeUpgradeRiskReportHandler)
@@ -114,18 +127,15 @@ func Install(_ context.Context, s *mcp.Server, _ *config.Config) error {
 
 // gkeUpgradeRiskReportHandler is the handler function for the /gke:upgraderiskreport prompt
 func gkeUpgradeRiskReportHandler(_ context.Context, request *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
-	clusterName := request.Params.Arguments[clusterNameArgName]
-	if strings.TrimSpace(clusterName) == "" {
+	clusterName := strings.TrimSpace(request.Params.Arguments[clusterNameArgName])
+	if clusterName == "" {
 		return nil, fmt.Errorf("argument '%s' cannot be empty", clusterNameArgName)
 	}
-	clusterLocation := request.Params.Arguments[clusterLocationArgName]
-	if strings.TrimSpace(clusterLocation) == "" {
+	clusterLocation := strings.TrimSpace(request.Params.Arguments[clusterLocationArgName])
+	if clusterLocation == "" {
 		return nil, fmt.Errorf("argument '%s' cannot be empty", clusterLocationArgName)
 	}
-	targetVersion := request.Params.Arguments[targetVersionArgName]
-	if strings.TrimSpace(targetVersion) == "" {
-		return nil, fmt.Errorf("argument '%s' cannot be empty", targetVersionArgName)
-	}
+	targetVersion := strings.TrimSpace(request.Params.Arguments[targetVersionArgName])
 
 	var buf bytes.Buffer
 	if err := gkeUpgradeRiskReportTmpl.Execute(&buf, map[string]string{
