@@ -44,11 +44,11 @@ The report is based on changes which are brought by the target version and versi
 
 You get GKE release notes from https://cloud.google.com/kubernetes-engine/docs/release-notes and use "lynx --dump [URL]" for fetching and converting HTML release notes to text.
 
-You get relevant kubernetes changelog files using "curl [URL]" against URL corresponding to a minor version of interest. For example, https://raw.githubusercontent.com/kubernetes/kubernetes/master/CHANGELOG/CHANGELOG-1.31.md is a changelog file URL for kuberentes minor version 1.31.
+You get relevant kubernetes changelogs using the ` + "`" + `get_k8s_changelog` + "`" + ` tool.
 
-When fetching Kubernetes changelogs, you download and analyze the changelog for every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must download and analyze CHANGELOG-1.29.md, CHANGELOG-1.30.md, and CHANGELOG-1.31.md changelog files.
+When getting Kubernetes changelogs, you must consider every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must get changelogs for 1.29, 1.30 and 1.31 minor versions.
 
-When analyzing GKE release notes and/or kubernetes changelog files, you must consider changes for every patch version from the current version (not including) up to and including the target version. For example, if upgrading from 1.29.1-123 to 1.29.5-456, you must read CHANGELOG-1.29.md and process all changes brought by 1.29 in the version range (1.29.1; 1.29.5], i.e. 1.29.2, 1.29.3, 1.29.4, 1.29.5. Also you must read GKE release notes and process all changes included in the version range (1.29.1-123; 1.29.5-456], i.e. 1.29.1-234, 1.29.2-345, 1.29.3-400 and 1.29.5-456.
+When analyzing GKE release notes and/or kubernetes changelogs, you must consider changes for every patch version from the current version (not including) up to and including the target version. For example, if upgrading from 1.29.1-123 to 1.29.5-456, you must get kubernetes changelog for the 1.29 version and process all changes brought by it in the version range (1.29.1; 1.29.5], i.e. 1.29.2, 1.29.3, 1.29.4, 1.29.5. Also you must read GKE release notes and process all changes included in the version range (1.29.1-123; 1.29.5-456], i.e. 1.29.1-234, 1.29.2-345, 1.29.3-400 and 1.29.5-456.
 
 Always fetch the latest versions of these documents at the time the report is generated, as they can be updated.
 
