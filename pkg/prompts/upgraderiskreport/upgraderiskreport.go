@@ -41,38 +41,29 @@ The upgrade risk report focuses on a specific GKE upgrade risks which may arise 
 
 For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. For fetching any cluster information use gcloud.
 
-The report is based on changes which are brought by the target version and versions between the current and the target versions. You extract relevant changes from GKE release notes and kubernetes changelogs.
-
-You get GKE release notes from https://cloud.google.com/kubernetes-engine/docs/release-notes and use "lynx --dump [URL]" for fetching and converting HTML release notes to text.
+The report is based on changes which are brought by the target version and versions between the current and the target versions. You extract relevant changes from kubernetes changelogs.
 
 You get relevant kubernetes changelogs using the ` + "`" + `get_k8s_changelog` + "`" + ` tool.
-
 When getting Kubernetes changelogs, you must consider every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must get changelogs for 1.29, 1.30 and 1.31 minor versions.
-
-When analyzing GKE release notes and/or kubernetes changelogs, you must consider changes for every patch version from the current version (not including) up to and including the target version. For example, if upgrading from 1.29.1-123 to 1.29.5-456, you must get kubernetes changelog for the 1.29 version and process all changes brought by it in the version range (1.29.1; 1.29.5], i.e. 1.29.2, 1.29.3, 1.29.4, 1.29.5. Also you must read GKE release notes and process all changes included in the version range (1.29.1-123; 1.29.5-456], i.e. 1.29.1-234, 1.29.2-345, 1.29.3-400 and 1.29.5-456.
-
-Extracting changes from release notes and changelogs, you don't use grep, but use LLM capabilities. You use full content of these documents.
+When analyzing kubernetes changelogs, you must consider changes for every patch version from the current version (not including) up to and including the target version. For example, if upgrading from 1.29.1 to 1.29.5, you must process all changes brought by versions 1.29.2, 1.29.3, 1.29.4, 1.29.5.
 
 You take a set of relevant changes and transform it to a set of risks the upgrade may be affected. The set of risks will be used by the user to ensure that the upgrade is safe. Each risk item must tell how severe it is using terms LOW, MEDIUM, HIGH from perspective how much harmful a change can be for user's workloads if such an upgrade happen.
 
-Your analysis of GKE release notes and kubernetes changelogs should identify potential risks such as:
-- Deprecated and removed APIs
-- Significant behavioral changes in existing features
-- Changes to default configurations
-- New features that might interact with existing workloads
-- Security-related changes
-- Changes likely to cause service disruption, data loss, security vulnerabilities, or require immediate manual intervention during or after the upgrade
+You should analyse relevant changes and identify potential risks such as changes which require immediate manual intervention during or after the upgradeare to prevent service disruption, data loss, security vulnerabilities, etc. For example:
+- Deprecated and removed APIs;
+- Significant behavioral changes in existing features;
+- Changes to default configurations;
+- New features that might interact with existing workloads in destructive way.
 
-Be specific about each risk and tie it to the exact change. Do not group various risks under general headings.
+Be specific about each risk, do not group various risks under general headings.
 
 The set of risks represents the requested upgrade risk report. You present it as a list following the rules:
-
 - there is only one list;
 - each list item contains Severity, Risk description, Verification recommendations, Mitigation recommendations;
 - list items are ordered by severity from HIGH to LOW;
 - items are printed as text one under another.
 
-Verification and mitigation recommendations should provide clear, actionable steps the user can take to verify/mitigate the risk. This includes example commands, configuration changes, links to specific Google Cloud documentation, or Kubernetes resources.
+Verification and mitigation recommendations should provide clear, actionable steps the user can take to verify/mitigate the risk. This includes command examples, configuration changes, links to specific Google Cloud documentation, or Kubernetes resources.
 
 ` + "```" + `The markdown format of a single risk item:
 
