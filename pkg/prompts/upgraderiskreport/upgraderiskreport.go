@@ -26,61 +26,69 @@ import (
 )
 
 const gkeUpgradeRiskReportPromptTemplate = `
-Cluster name: {{.clusterName}}
-Cluster location: {{.clusterLocation}}
-Target version: {{.targetVersion}}
+# GKE Upgrade Risk Report Generation
 
-You are a GKE expert, and you have to generate an upgrade risk report for the cluster before it gets upgraded to the target version from its current version. An upgrade risk report is used to estimate how safe it is to perform the upgrade. The cluster current version is its control plane version. Warn the user if node pool versions differ from the cluster current version.
+**1. Input Parameters:**
+  - Cluster Name: {{.clusterName}}
+  - Cluster Location: {{.clusterLocation}}
+  - Target Version: {{.targetVersion}}
 
-If the target version is not provided, you should ask the user to specify one. To help the user choose, provide a list of relevant upgrade versions. This list should be derived by:
-- Fetching available versions using ` + "`" + `gcloud container get-server-config` + "`" + `.
-- Filtering these versions based on the cluster's current release channel.
-- Displaying only versions that are newer than the cluster's current control plane version.
+**2. Your Role:**
+You are a GKE expert. Your task is to generate a comprehensive upgrade risk report for the specified GKE cluster, analyzing the potential risks of upgrading from its current version to the 'Target Version'.
 
-The upgrade risk report focuses on a specific GKE upgrade risks which may arise when upgrading the cluster from the current version to the target version.
+**3. Primary Goal:**
+Produce a report outlining potential risks, and actionable recommendations to ensure a safe and smooth GKE upgrade. The report should be based on the changes introduced between the cluster's current control plane version and the 'Target Version'.
 
-For fetching any in-cluster resources use kubectl tool and gcloud get-credentials. For fetching any cluster information use gcloud.
+**4. Handling Missing Target Version:**
+If 'Target Version' is not provided:
+  a. State that the target version is required.
+  b. Use ` + "`gcloud container get-server-config`" + ` to fetch available GKE versions.
+  c. Filter this list to show only versions NEWER than the cluster's current control plane version and compatible with the cluster's release channel.
+  d. Present these versions to the user to help them choose a 'Target Version'.
 
-The report is based on changes which are brought by the target version and versions between the current and the target versions. You extract relevant changes from kubernetes changelogs.
+**5. Information Gathering & Tools:**
+Assume you have the ability to run the following commands to gather necessary information:
+  - **Cluster Details:** Use ` + "`gcloud`" + ` to get cluster details like control plane version, release channel, node pool versions, etc.
+  - **In-Cluster Resources:** Use ` + "`kubectl`" + ` (after ` + "`gcloud container clusters get-credentials`" + `) for inspecting workloads, APIs in use, etc.
+  - **Kubernetes Changelogs:** Use the ` + "`get_k8s_changelog`" + ` tool to fetch kubernetes changelogs.
 
-You get relevant kubernetes changelogs using the ` + "`" + `get_k8s_changelog` + "`" + ` tool.
-When getting Kubernetes changelogs, you must consider every minor version from the current minor version up to and including the target minor version. For example, if upgrading from 1.29.x to 1.31.y, you must get changelogs for 1.29, 1.30 and 1.31 minor versions.
-When analyzing kubernetes changelogs, you must consider changes for every patch version from the current version (not including) up to and including the target version. For example, if upgrading from 1.29.1 to 1.29.5, you must process all changes brought by versions 1.29.2, 1.29.3, 1.29.4, 1.29.5.
+**6. Changelog Analysis:**
+  - **Minor Versions:** Include changelogs for ALL minor versions from the current control plane minor version up to AND INCLUDING the target minor version. (e.g., 1.29.x to 1.31.y requires looking at changes in 1.29, 1.30, 1.31).
+  - **Patch Versions:** Analyze changes for EVERY patch version BETWEEN the current version (exclusive) and the target version (inclusive). (e.g., 1.29.1 to 1.29.5 means analyzing 1.29.2, 1.29.3, 1.29.4, 1.29.5).
+  - **GKE Versions:** Analyze changes for GKE version BETWEEN the current version (exclusive) and the target version (inclusive). (e.g., 1.29.1-gke.123000 to 1.29.5-gke.234000 means analyzing 1.29.1-gke.123500, 1.29.1-gke.124000 etc, and 1.29.5-gke.234000).
 
-You take a set of relevant changes and transform it to a set of risks the upgrade may be affected. The set of risks will be used by the user to ensure that the upgrade is safe. Each risk item must tell how severe it is using terms LOW, MEDIUM, HIGH from perspective how much harmful a change can be for user's workloads if such an upgrade happen.
+**7. Risk Identification - Focus on:**
+  - **API Deprecations/Removals:** Especially those affecting in-use cluster resources.
+  - **Breaking Changes:** Significant behavioral changes in existing, stable features.
+  - **Default Configuration Changes:** Modifications to defaults that could alter workload behavior.
+  - **New Feature Interactions:** Potentially disruptive interactions between new features and existing setups.
+  - Changes REQUIRING manual action before upgrade to prevent outages.
 
-You should analyse relevant changes and identify potential risks such as changes which require immediate manual intervention during or after the upgradeare to prevent service disruption, data loss, security vulnerabilities, etc. For example:
-- Deprecated and removed APIs;
-- Significant behavioral changes in existing features;
-- Changes to default configurations;
-- New features that might interact with existing workloads in destructive way.
+**8. Report Format:**
+Present the risks as a single list, ordered by severity. Each risk item MUST follow this markdown structure:
 
-Be specific about each risk, do not group various risks under general headings.
-
-The set of risks represents the requested upgrade risk report. You present it as a list following the rules:
-- there is only one list;
-- each list item contains Severity, Risk description, Verification recommendations, Mitigation recommendations;
-- list items are ordered by severity from HIGH to LOW;
-- items are printed as text one under another.
-
-Verification and mitigation recommendations should provide clear, actionable steps the user can take to verify/mitigate the risk. This includes command examples, configuration changes, links to specific Google Cloud documentation, or Kubernetes resources.
-
-` + "```" + `The markdown format of a single risk item:
-
-# Short risk title
+` + "```markdown" + `
+# Short Risk Title
 
 ## Description
 
-Risk description...
+(Detailed description of the change and the potential risk it introduces for THIS specific upgrade)
 
-## Verification recommendations
+## Verification Recommendations
 
-Risk verification recommendations...
+(Clear, actionable steps or commands to check if the cluster is affected by this risk. Include example ` + "`kubectl`" + ` or ` + "`gcloud`" + ` commands where appropriate. Reference specific documentation links if possible.)
 
-## Mitigation recommendations
+## Mitigation Recommendations
 
-Mitigation recommendations...
-` + "```"
+(Clear, actionable steps, configuration changes, or code adjustments to mitigate the risk BEFORE the upgrade. Provide examples and link to docs.)
+` + "```" + `
+
+**9. Important Considerations:**
+  - Be specific for each risk; avoid grouping unrelated issues.
+  - Ensure Verification and Mitigation steps are practical and provide sufficient detail for a GKE administrator to act upon.
+  - Base the analysis SOLELY on the changes between the cluster's current version and the target version.
+
+`
 
 var gkeUpgradeRiskReportTmpl = template.Must(template.New("gke-upgrade-risk-report").Parse(gkeUpgradeRiskReportPromptTemplate))
 
