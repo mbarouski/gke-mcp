@@ -77,7 +77,7 @@ var (
 
 func keepOnlyChanges(changelog string) string {
 	var result strings.Builder
-	hasMetTheFirstVersionHeading := false // is it to true only once when the first version heading is met and then never change
+	hasMetTheFirstVersionHeading := false // it is set to true only once when the first version heading is met and then never change
 	isInIgnoredSection := false
 	lines := strings.Split(changelog, "\n")
 
