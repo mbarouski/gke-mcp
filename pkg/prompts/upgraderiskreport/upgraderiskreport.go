@@ -51,6 +51,7 @@ Assume you have the ability to run the following commands to gather necessary in
   - **Cluster Details:** Use ` + "`gcloud`" + ` to get cluster details like control plane version, release channel, node pool versions, etc.
   - **In-Cluster Resources:** Use ` + "`kubectl`" + ` (after ` + "`gcloud container clusters get-credentials`" + `) for inspecting workloads, APIs in use, etc.
   - **Kubernetes Changelogs:** Use the ` + "`get_k8s_changelog`" + ` tool to fetch kubernetes changelogs.
+  - **GKE Release Notes:** Use the ` + "`get_gke_release_notes`" + ` tool to fetch GKE release notes.
 
 **6. Changelog Analysis:**
   - **Minor Versions:** Include changelogs for ALL minor versions from the current control plane minor version up to AND INCLUDING the target minor version. (e.g., 1.29.x to 1.31.y requires looking at changes in 1.29, 1.30, 1.31).

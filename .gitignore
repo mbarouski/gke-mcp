@@ -5,3 +5,4 @@ gke-mcp
 dist/
 gemini-extension.json.out
 vendor/
+release-notes-*.html
