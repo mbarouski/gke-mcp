@@ -84,10 +84,12 @@ Present the risks as a single list, ordered by severity. Each risk item MUST fol
 (Clear, actionable steps, configuration changes, or code adjustments to mitigate the risk BEFORE the upgrade. Provide examples and link to docs.)
 ` + "```" + `
 
-**9. Important Considerations:**
+**9. Principles:**
   - Be specific for each risk; avoid grouping unrelated issues.
   - Ensure Verification and Mitigation steps are practical and provide sufficient detail for a GKE administrator to act upon.
   - Base the analysis SOLELY on the changes between the cluster's current version and the target version.
+  - Do not read or write any local files generating the report.
+  - In the final report, keep only risks which have mitigation actions, ignore those which have no mitigation actions.
 
 `
 
@@ -101,7 +103,7 @@ const (
 
 func Install(_ context.Context, s *mcp.Server, _ *config.Config) error {
 	s.AddPrompt(&mcp.Prompt{
-		Name:        "gke:upgraderiskreport",
+		Name:        "gke:upgrade-risk-report",
 		Description: "Generate GKE cluster upgrade risk report.",
 		Arguments: []*mcp.PromptArgument{
 			{
@@ -125,7 +127,7 @@ func Install(_ context.Context, s *mcp.Server, _ *config.Config) error {
 	return nil
 }
 
-// gkeUpgradeRiskReportHandler is the handler function for the /gke:upgraderiskreport prompt
+// gkeUpgradeRiskReportHandler is the handler function for the /gke:upgrade-risk-report prompt
 func gkeUpgradeRiskReportHandler(_ context.Context, request *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 	clusterName := strings.TrimSpace(request.Params.Arguments[clusterNameArgName])
 	if clusterName == "" {
