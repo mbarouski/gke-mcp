@@ -67,8 +67,9 @@ Analyze upgrade changes with a focus on:
 
 > [!IMPORTANT]
 > **Filter Rule:**
-> In the final report, **only include risks that require mitigation actions**. Exclude new features, performance improvements, or risks that cannot be mitigated prior to the upgrade.
-> In the final report, **do not include** risks that are not relevant for the cluster and its workloads (analyse only user-managed workloads).
+> In the final report:
+> - **Only include risks that require mitigation actions**. Exclude new features, performance improvements, or risks that cannot be mitigated prior to the upgrade.
+> - **Do not include** risks that are not relevant for the cluster and its workloads (analyse only user-managed workloads).
 
 ### 4. Report Format
 
