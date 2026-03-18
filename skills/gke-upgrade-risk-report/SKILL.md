@@ -53,9 +53,9 @@ Gather data to support the analysis:
 - **Cluster Details:** Use `gcloud container clusters describe` to get the cluster state (including current control plane version, node pool versions, release channel, etc).
 - **In-Cluster Resources:** Use `kubectl` (e.g., `kubectl api-resources`, `kubectl get`) to inspect workloads and APIs in use to match against risky upgrade changes.
 - **Changelogs & Release Notes:** Fetch Kubernetes changelogs using the `get_k8s_changelog` tool from GKE MCP server and fetch GKE release notes using `get_gke_release_notes` tool from GKE MCP server. Extract data for the version range:
-  - **Minor Versions:** Analyze changes from the current minor version up to the target minor version.
-  - **Patch Versions:** Analyze all patch increments for each minor version.
-  - **GKE Versions:** Analyze all GKE-specific patch increments using GKE release notes.
+  - **Minor Versions:** Analyze changes from the current minor version up to and including the target minor version.
+  - **Patch Versions:** Analyze changes for every patch version between the current version (exclusive) and the target version (inclusive).
+  - **GKE Versions:** Analyze GKE release notes for all versions between the current version (exclusive) and the target version (inclusive).
 
 ### 3. Risk Identification & Analysis
 
